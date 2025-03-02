@@ -1,21 +1,21 @@
 import contextlib
 import random
 import turtle
-import time
+import tkinter
 from numpy import clip
-from PIL import Image, ImageChops, ImageGrab, ImageMath
+from PIL import Image, ImageChops, ImageGrab, ImageStat
 
 screen = turtle.Screen()
 t = turtle.Turtle()
 t.speed(0)
-image = Image.open("turt.jpg")
+image = Image.open("duck.png")
 image.thumbnail((1500,1000))
 image = image.convert('RGB')
 width, height = image.size
 screen.setup(width, height)
 t.ht()
 failcount = 0
-smallerim = Image.open("turt.jpg")
+smallerim = Image.open("duck.png")
 smallerim.thumbnail((50, 50))
 colors = smallerim.getcolors(2500)
 newcolors = []
@@ -29,16 +29,16 @@ t.undobufferentries = 4
 
 #---------------------------------------------------------------------
 def finddiff(im1, im2):
-  im1.thumbnail((200,200))
-  im2.thumbnail((200,200))
   differntnes = 0
   diff = ImageChops.difference(im1, im2.convert('RGB'))
-  colors = diff.getcolors(30000)
+  d = ImageStat.Stat(diff)
+  differntnes = round(1000*sum(d.mean))
+  # colors = diff.getcolors(30000)
 
-  for color in colors[:len(colors)//2]:
-    differntnes += color[0] * (color[1][0] + color[1][1] + color[1][2])
-  for color in colors[len(colors)//2:]:
-    differntnes += color[0] * (color[1][0] + color[1][1] + color[1][2])
+  # for color in colors[:len(colors)//2]:
+  #   differntnes += color[0] * (color[1][0] + color[1][1] + color[1][2])
+  # for color in colors[len(colors)//2:]:
+  #   differntnes += color[0] * (color[1][0] + color[1][1] + color[1][2])
   return differntnes
 
 #---------------------------------------------------------------------
@@ -70,7 +70,7 @@ def drawshape(shape):
   t.setheading(int(shape[5]))
   t.begin_fill()
   with contextlib.suppress(ZeroDivisionError):
-    t.circle(int(shape[6]), int(shape[2]), int(shape[1]))
+    t.circle(int(shape[6]), int(shape[2]), max(2,int(shape[1])))
   t.end_fill()
 
 
@@ -95,7 +95,6 @@ def adjust(old_shape, chaos):
 
 
 #---------------------------------------------------------------------
-input('Press Enter to Begin...')
 while True:
   with open('shapes.txt','r') as f:
     shapes = f.read()
@@ -133,12 +132,14 @@ while True:
     drawshape(circlestat)
     screen.update()
     current = ImageGrab.grab(bbox=windowshape)
+    
     difference = finddiff(image, current)
 
     if best > difference:
       bestcirc = circlestat
       best = difference
 
+  
   for i in range(25):   
     new = adjust(bestcirc, 5 /(1+i))
     t.undo()
@@ -151,12 +152,17 @@ while True:
     if best > difference:
       bestcirc = new
       best = difference
+
+
   #----------------------------------------------
   if best < before:
     bestcirc[0] = best
     try:
       print("win")
       failcount = 0
+      bestcirc[7] = int(bestcirc[7])
+      bestcirc[8] = int(bestcirc[8])
+      bestcirc[9] = int(bestcirc[9])
       with open("shapes.txt", "a") as f:
         f.write(str(tuple(bestcirc))+"\n")
     except UnboundLocalError:
